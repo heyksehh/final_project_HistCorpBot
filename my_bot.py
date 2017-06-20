@@ -10,7 +10,7 @@ TOKEN = os.environ["TOKEN"]
 bot = telebot.TeleBot(TOKEN, threaded=False)
 
 bot.remove_webhook()
-bot.set_webhook(url="https://hist-corpora-bot.herokuapp.com/bot")
+bot.set_webhook(url="https://cryptic-retreat-82002.herokuapp.com/bot")
 
 app = flask.Flask(__name__)
 
