@@ -1,34 +1,32 @@
 ﻿# encoding: utf-8
 import telebot
-import conf
 import urllib.request
 import re
-#import flask
+import flask
+import os
 
+TOKEN = os.environ["TOKEN"]
 
-#WEBHOOK_URL_BASE = "https://{}:{}".format(conf.WEBHOOK_HOST, conf.WEBHOOK_PORT)
-#WEBHOOK_URL_PATH = "/{}/".format(conf.TOKEN)
+bot = telebot.TeleBot(TOKEN, threaded=False)
 
-bot = telebot.TeleBot(conf.TOKEN) 
-#bot.remove_webhook()
+bot.remove_webhook()
+bot.set_webhook(url="https://hist-corpora-bot.herokuapp.com/bot")
 
-#bot.set_webhook(url=WEBHOOK_URL_BASE+WEBHOOK_URL_PATH)
-
-#app = flask.Flask(__name__)
+app = flask.Flask(__name__)
 
 
 @bot.message_handler(commands=['start', 'help'])
-def choose_corpora(message):
+def welcome_choose_method(message): #здороваемся с пользователем и выбираем метод поиска
     bot.send_message(message.chat.id, "Здравствуйте! Это бот, который осуществляет поиск в историческом древнерусском подкорпусе НКРЯ. \nВведите 1, если вы хотите найти точную словоформу. \nВведите 2, если вы хотите выбрать грамматические признаки леммы.")
 
     
 @bot.message_handler(regexp="1")
-def certain_form(message):
+def certain_form(message): #даёт указания для поиска по точным формам
     bot.send_message(message.chat.id, "Отлично. Теперь введите 'поиск ' и точную словоформу, которую нужно найти в корпусе.")
 
 
 @bot.message_handler(regexp='(п|П)оиск*')
-def search_certain_form(message):
+def search_certain_form(message): #поиск для запроса по точным формам
     user_word = message.text.split(' ')
     word0 = user_word[1]
     word = urllib.parse.quote(word0, safe = '')
@@ -118,12 +116,12 @@ def search_certain_form(message):
     
 
 @bot.message_handler(regexp='2')
-def word_gram(message):
+def word_gram(message): #даёт указания к поиску по грамматичсеким признакам
     bot.send_message(message.chat.id, "Очень хорошо! Теперь введите 'грам ', лемму и грамматические признаки через пробел. Если признаки не нужны, введите 0. Если вам необходима подсказка, введите '/gramhelp'")
 
 
-@bot.message_handler(commands=['gramhelp'])
-def gram_helper (message):
+@bot.message_handler(commands=['gramhelp']) 
+def gram_helper (message): #даёт информацию о правилах записи грамматических признаков
     bot.send_message(message.chat.id, "__ Падежи: __\n nom - именительный\n voc - звательный\n acc - винительный\n gen - родительный\n dat - дательный\n ins - творительный\n loc - местный\n\
 __ Род: __\n m - мужской\n f - женский\n n - средний\n\
 __ Число: __\n sg - единственное\n du - двойственное\n pl - множественное\n adnum - счётная форма\n\
@@ -133,7 +131,7 @@ __ Лицо: __\n 1p - 1 лицо\n 2p - 2 лицо\n 3p - 3 лицо")
 
 
 @bot.message_handler(regexp='(Г|г)рам*')
-def search_word_gram(message):
+def search_word_gram(message): #поиск для запроса по грамматическим признакам
     user_word = message.text.split(' ')
     word0 = user_word[1]
     word = urllib.parse.quote(word0, safe = '')
@@ -234,28 +232,28 @@ def search_word_gram(message):
 
     
 @bot.message_handler(content_types=['text'])
-def random_text(message):
+def random_text(message): #реагирует на сообщения, не являющиеся поисковым запросом, напоминает пользователю о правилах
     bot.send_message(message.chat.id, "Кажется, то, что вы написали, не является поисковым запросом.\nВведите 1, если вы хотите найти точную словоформу.\nВведите 2, если вы хотите выбрать грамматические признаки леммы. ")
+
     
-#@app.route('/', methods=['GET', 'HEAD'])
-#def index():
-#    return 'ok'
+@app.route("/", methods=['GET', 'HEAD'])
+def index():
+    return 'ok'
 
-#@app.route(WEBHOOK_URL_PATH, methods=['POST'])
-#def webhook():
-#    if flask.request.headers.get('content-type') == 'application/json':
-#        json_string = flask.request.get_data().decode('utf-8')
-#        update = telebot.types.Update.de_json(json_string)
-#        bot.process_new_updates([update])
-#        return ''
-#    else:
-#        flask.abort(403)
 
+@app.route("/bot", methods=['POST'])
+def webhook():
+    if flask.request.headers.get('content-type') == 'application/json':
+        json_string = flask.request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return ''
+    else:
+        flask.abort(403)
+
+        
 if __name__ == '__main__':
-    bot.polling(none_stop=True)
-    
-#if __name__ == '__main__':
-#    import os
-#    app.debug = True
-#    port = int(os.environ.get("PORT", 5000))
-#    app.run(host='0.0.0.0', port=port)
+    import os
+    app.debug = True
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
